@@ -1,9 +1,8 @@
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/cruzpazv/cute-plant-card/main/images/logo-dark.png">
-    <img src="https://raw.githubusercontent.com/cruzpazv/cute-plant-card/main/images/logo-light.png" alt="Cute Plant Card" width="430">
-  </picture>
+  <img src="https://raw.githubusercontent.com/cruzpazv/cute-plant-card/main/brand/icon.png" alt="Cute Plant Card" width="160">
 </p>
+
+# Cute Plant Card
 
 [![HACS](https://img.shields.io/badge/HACS-Custom-orange)](https://hacs.xyz/docs/faq/custom_repositories)
 [![Release](https://img.shields.io/github/v/release/cruzpazv/cute-plant-card?label=release)](https://github.com/cruzpazv/cute-plant-card/releases)
