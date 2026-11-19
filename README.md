@@ -1,4 +1,9 @@
-# Cute Plant Card 🪴
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="images/logo-dark.png">
+    <img src="images/logo-light.png" alt="Cute Plant Card" width="430">
+  </picture>
+</p>
 
 [![hacs](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz)
 
@@ -138,6 +143,7 @@ The temperature comes from `temperature_entity`, else the weather entity, else a
 `dist/cute-plant-card.js` is the source; there's no build step.
 
 - `docs/demo.html` is a live demo that runs against a fake Home Assistant, with a slider to make days pass. Open it directly from disk.
+- `node docs/render-brand.mjs` redraws the icon, logo and social preview from the card's own renderer.
 - `node docs/render-preview.mjs` regenerates `images/preview-*.svg` (and the `.png` files, if `rsvg-convert` is installed).
 
 ---
