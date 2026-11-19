@@ -14,7 +14,8 @@ jobs:
         with:
           node-version: 22
       - run: node --check dist/cute-plant-card.js
-      # every plant type in every state must draw without throwing
+      # drawing, countdown, rain/heat, sensor bubbles, actions, Perenual, i18n parity
+      - run: node --test "tests/*.test.mjs"
       - run: node docs/render-preview.mjs
       # the version badge reads package.json; it must match the card
       - name: Version matches

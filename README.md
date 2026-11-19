@@ -146,7 +146,9 @@ The temperature comes from `temperature_entity`, else the weather entity, else a
 
 ## Development
 
-`dist/cute-plant-card.js` is the source; there's no build step.
+`dist/cute-plant-card.js` is the source; there's no build step and no dependencies.
+
+- `node --test "tests/*.test.mjs"` runs the test suite (Node 22+). It loads the card into a small fake browser and checks the drawing in every state, the countdown with rain and heat, the sensor bubbles, tap and hold, Perenual with a mocked API, and that English and Spanish stay in sync.
 
 - `docs/demo.html` is a live demo that runs against a fake Home Assistant, with a slider to make days pass. Open it directly from disk.
 - `node docs/render-brand.mjs` redraws the icon, logo and social preview from the card's own renderer.

@@ -19,14 +19,14 @@ const pure = src.slice(0, src.indexOf("/* ── card element ──"));
 const { plantSVG, palette, SPECIES } = new Function(`${pure}; return { plantSVG, palette, SPECIES };`)();
 
 const STATES = [
-  { label: "regada", d: 0, mood: "happy", wet: true },
-  { label: "2 días", d: 0.25, mood: "happy" },
-  { label: "mitad", d: 0.5, mood: "ok" },
-  { label: "1 día", d: 0.75, mood: "tired" },
-  { label: "¡regar!", d: 1, mood: "sad" },
-  { label: "lluvia", d: 0, mood: "rain", rain: true },
-  { label: "sin datos", d: 0.2, mood: "sleep" },
-  { label: "calor", d: 1, mood: "heat" },
+  { label: "just watered", d: 0, mood: "happy", wet: true },
+  { label: "2 days on", d: 0.25, mood: "happy" },
+  { label: "halfway", d: 0.5, mood: "ok" },
+  { label: "1 day left", d: 0.75, mood: "tired" },
+  { label: "water me!", d: 1, mood: "sad" },
+  { label: "raining", d: 0, mood: "rain", rain: true },
+  { label: "no data", d: 0.2, mood: "sleep" },
+  { label: "scorched", d: 1, mood: "heat" },
 ];
 const only = process.argv.slice(2);
 const KINDS = Object.keys(SPECIES).filter((k) => !only.length || only.includes(k));
