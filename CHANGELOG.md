@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.2
+
+- The logo now shows at the top of the README inside HACS (plain image instead of `<picture>`, which HACS doesn't render).
+
 ## 0.2.1
 
 - Typing a species in the visual editor no longer spends the Perenual quota on every keystroke: the lookup waits until typing stops, and other edits keep the species data.

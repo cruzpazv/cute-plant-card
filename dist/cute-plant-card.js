@@ -4,7 +4,7 @@
  * MIT License
  */
 
-const VERSION = "0.2.1";
+const VERSION = "0.2.2";
 const TAG = "cute-plant-card";
 const DAY = 864e5;
 const PERENUAL = "https://perenual.com/api/v2";
