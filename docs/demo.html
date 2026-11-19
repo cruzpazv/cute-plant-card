@@ -1,0 +1,78 @@
+<!doctype html>
+<!--
+  Live demo of the card with a fake Home Assistant. Open it straight from
+  disk (file://) in any browser: drag the slider to make days pass.
+-->
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cute Plant Card · demo</title>
+<style>
+  :root { --card-background-color: #fff; --primary-text-color: #222; --secondary-text-color: #777; --bg: #f2f2f4; }
+  body.dark { --card-background-color: #1c1d21; --primary-text-color: #eee; --secondary-text-color: #999; --bg: #111317; }
+  body { margin: 0; padding: 24px 16px; background: var(--bg); color: var(--primary-text-color); font-family: system-ui, sans-serif; }
+  .controls { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-bottom: 20px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, 128px); grid-auto-rows: 120px; gap: 8px; }
+  .grid.big { grid-template-columns: repeat(auto-fill, 264px); grid-auto-rows: 248px; }
+  ha-card { display: block; background: var(--card-background-color); border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+  .lbl { font-size: 12px; color: var(--secondary-text-color); margin: 20px 0 6px; }
+</style>
+</head>
+<body>
+<div class="controls">
+  <label>Días desde el riego: <input id="days" type="range" min="0" max="9" step="0.25" value="1"> <b id="dv"></b></label>
+  <label><input id="rain" type="checkbox"> lloviendo (exterior)</label>
+  <label><input id="hot" type="checkbox"> 31 °C</label>
+  <label><input id="dark" type="checkbox"> oscuro</label>
+</div>
+<div class="lbl">3 × 2 (tamaño por defecto) · toca = regar, mantén = más info</div>
+<div class="grid" id="small"></div>
+<div class="lbl">6 × 4</div>
+<div class="grid big" id="big"></div>
+
+<script src="../dist/cute-plant-card.js"></script>
+<script>
+  const KINDS = ["generic", "monstera", "palm", "pothos", "fern", "snake", "succulent", "cactus", "herb", "flower"];
+  const NAMES = { generic: "Balcón", monstera: "Monstera", palm: "Palmera", pothos: "Potus", fern: "Helecho", snake: "Sansevieria", succulent: "Echeveria", cactus: "Cactus", herb: "Albahaca", flower: "Geranio" };
+  const D = 864e5;
+  let watered = {};
+  const hass = () => {
+    const days = +document.getElementById("days").value;
+    const states = {
+      "weather.casa": { state: document.getElementById("rain").checked ? "rainy" : "sunny", attributes: { temperature: document.getElementById("hot").checked ? 31 : 20 } },
+    };
+    const flora = { moisture: [Math.max(5, 55 - days * 6), "moisture", "%"], temperature: [document.getElementById("hot").checked ? 31 : 21.4, "temperature", "°C"], illuminance: [8400, "illuminance", "lx"], conductivity: [920, "conductivity", "µS/cm"], battery: [76, "battery", "%"] };
+    for (const [k, [v, dc, u]] of Object.entries(flora)) states[`sensor.flora_${k}`] = { state: String(v), attributes: { device_class: dc, unit_of_measurement: u, friendly_name: `Mi Flora ${k}` } };
+    for (const k of KINDS) states[`input_button.${k}`] = { state: new Date(watered[k] || Date.now() - days * D * (k === "cactus" || k === "snake" || k === "succulent" ? 2 : 1) * (k === "fern" || k === "herb" || k === "flower" ? 0.5 : 1)).toISOString(), attributes: {} };
+    return {
+      states, entities: REG, locale: { language: "es" },
+      callService: async (dom, svc, data) => { watered[data.entity_id.split(".")[1]] = Date.now(); update(); },
+    };
+  };
+  const REG = Object.fromEntries(["moisture", "temperature", "illuminance", "conductivity", "battery"].map((k) => [`sensor.flora_${k}`, { entity_id: `sensor.flora_${k}`, device_id: "flora", entity_category: k === "battery" ? "diagnostic" : null }]));
+  const cards = [];
+  const make = (host, kind, extra = {}) => {
+    const c = document.createElement("cute-plant-card");
+    c.setConfig({ entity: `input_button.${kind}`, name: NAMES[kind], species: kind, outdoor: true, weather_entity: "weather.casa", ...extra });
+    c.addEventListener("hass-action", (e) => console.log("hass-action", e.detail));
+    host.appendChild(c);
+    cards.push(c);
+  };
+  KINDS.forEach((k) => make(document.getElementById("small"), k, k === "generic" ? { sensors: ["sensor.flora_moisture", "sensor.flora_temperature"] } : {}));
+  make(document.getElementById("big"), "monstera", { device_id: "flora", max_bubbles: 6 });
+  make(document.getElementById("big"), "palm", { sensors: ["sensor.flora_moisture", "sensor.flora_temperature"] });
+  function update() {
+    document.getElementById("dv").textContent = document.getElementById("days").value;
+    const h = hass();
+    cards.forEach((c) => (c.hass = h));
+  }
+  document.querySelectorAll("input").forEach((i) => i.addEventListener("input", () => {
+    if (i.id === "days") watered = {};
+    document.body.classList.toggle("dark", document.getElementById("dark").checked);
+    update();
+  }));
+  update();
+</script>
+</body>
+</html>
