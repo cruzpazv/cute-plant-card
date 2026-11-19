@@ -94,6 +94,9 @@ test("while it rains outdoors: no need to water", () => {
   assert.equal(out.r.status, "rain");
   assert.equal(out.r.mood, "rain");
   assert.equal(out.el.sub.textContent, "It's raining: no need to water");
+  assert.equal(out.el.chip.className, "chip rain");
+  assert.doesNotMatch(out.el.badges.innerHTML, /<title>It's raining/, "no rain badge on top of the drops");
+  assert.match(out.el.art.innerHTML, /class="drop"/);
   const inside = state({ species: "generic", weather_entity: "weather.casa" }, states);
   assert.equal(inside.r.status, "water");
 });

@@ -4,7 +4,7 @@
  * MIT License
  */
 
-const VERSION = "0.1.1";
+const VERSION = "0.1.2";
 const TAG = "cute-plant-card";
 const DAY = 864e5;
 const PERENUAL = "https://perenual.com/api/v2";
@@ -356,8 +356,6 @@ function ground(kind, n, col) {
 
 const star = (x, y, s, delay) =>
   `<path class="twinkle" style="animation-delay:${delay}s" d="M${x},${y - s} Q${x},${y} ${x + s},${y} Q${x},${y} ${x},${y + s} Q${x},${y} ${x - s},${y} Q${x},${y} ${x},${y - s}Z" fill="#ffd76a"/>`;
-const cloud = (x, y, s) =>
-  `<path transform="translate(${x},${y}) scale(${s})" d="M-9,3 Q-12,3 -12,0 Q-12,-3.5 -8,-3.5 Q-7,-8 -2,-8 Q3,-8 4,-4 Q9,-5 10,0 Q10.5,3 7,3 Z" fill="#dcebf8" stroke="#9db8d3" stroke-width=".8"/>`;
 
 /** The whole scene for one state. p = {kind, d, mood, col, wet, rain} */
 function plantSVG(p) {
@@ -371,7 +369,14 @@ function plantSVG(p) {
   else [back, front] = stemPlant(LAYOUT[kind] || LAYOUT.generic, d, col, lost);
   if (kind === "pothos") front += vines(d, col, lost);
   const sway = mood === "happy" || mood === "rain" || mood === "ok" ? "sway" : mood === "tired" ? "sway slow" : "";
-  let out = `<ellipse cx="50" cy="95.6" rx="25" ry="2.8" fill="#000" opacity=".1"/>` + ground(kind, lost, col) +
+  let sun = "";
+  if (mood === "heat") {
+    let rays = "";
+    for (let i = 0; i < 8; i++) rays += `<path d="M0,-9.5 V-12.8" transform="rotate(${i * 45})" stroke="#f4a51c" stroke-width="1.8" stroke-linecap="round"/>`;
+    sun = `<g transform="translate(50,16)"><g class="spin">${rays}</g><circle r="7.2" fill="#ffd23f" stroke="#f4a51c" stroke-width="1"/>` +
+      `<path d="M-3.6,-.6 q1.2,-1.4 2.4,0 M1.2,-.6 q1.2,-1.4 2.4,0 M-1.6,2.2 q1.6,1.5 3.2,0" fill="none" stroke="#8a5a1a" stroke-width=".9" stroke-linecap="round"/></g>`;
+  }
+  let out = sun + `<ellipse cx="50" cy="95.6" rx="25" ry="2.8" fill="#000" opacity=".1"/>` + ground(kind, lost, col) +
     `<ellipse cx="50" cy="59.6" rx="19.5" ry="2.8" fill="#6b4b3e"/>` +
     `<g class="plant ${sway}">${back}</g>` + potSVG(col, mood) +
     (front ? `<g class="plant ${sway}">${front}</g>` : "");
@@ -384,17 +389,12 @@ function plantSVG(p) {
     out += `<g transform="translate(66,36)"><g class="falling">${bit}</g></g>`;
   }
   if (p.rain) {
-    out += cloud(24, 12, 1) + cloud(77, 9, 0.8);
-    [[18, 17], [23, 17], [28, 17], [73, 13], [78, 13], [83, 13]].forEach(([x, y], i) => {
+    [[20, 10], [35, 4], [50, 12], [65, 5], [80, 11], [27, 26], [58, 24], [84, 28], [15, 40]].forEach(([x, y], i) => {
       out += `<path class="drop" style="animation-delay:${r2((i * 0.37) % 0.9)}s" d="M${x},${y} l-.8,2.6" stroke="#6bb6ff" stroke-width="1.2" stroke-linecap="round"/>`;
     });
   }
   if (mood === "heat") {
-    let rays = "";
-    for (let i = 0; i < 8; i++) rays += `<path d="M0,-9.5 V-12.8" transform="rotate(${i * 45})" stroke="#f4a51c" stroke-width="1.8" stroke-linecap="round"/>`;
-    out += `<g transform="translate(80,15)"><g class="spin">${rays}</g><circle r="7.2" fill="#ffd23f" stroke="#f4a51c" stroke-width="1"/>` +
-      `<path d="M-3.6,-.6 q1.2,-1.4 2.4,0 M1.2,-.6 q1.2,-1.4 2.4,0 M-1.6,2.2 q1.6,1.5 3.2,0" fill="none" stroke="#8a5a1a" stroke-width=".9" stroke-linecap="round"/></g>` +
-      [[14, 46], [86, 52], [20, 30]].map(([x, y], i) => `<path class="shimmer" style="animation-delay:${i * 0.6}s" d="M${x},${y} q2,-2.5 0,-5 q-2,-2.5 0,-5" fill="none" stroke="#ffab4a" stroke-width="1.1" stroke-linecap="round"/>`).join("");
+    out += [[14, 46], [86, 52], [20, 30]].map(([x, y], i) => `<path class="shimmer" style="animation-delay:${i * 0.6}s" d="M${x},${y} q2,-2.5 0,-5 q-2,-2.5 0,-5" fill="none" stroke="#ffab4a" stroke-width="1.1" stroke-linecap="round"/>`).join("");
   }
   if (mood === "sleep")
     out += `<text class="zz" x="68" y="42" font-size="8" font-weight="700" fill="#8a9bb0">z</text><text class="zz z2" x="75" y="33" font-size="6" font-weight="700" fill="#8a9bb0">z</text>`;
@@ -901,7 +901,7 @@ class CutePlantCard extends HTMLElement {
     const badge = (icon, title) => `<svg viewBox="0 0 24 24"><title>${esc(title)}</title>${ICON[icon]}</svg>`;
     let badges = "";
     if (c.show_light !== false && r.light) badges += badge(["", "shade", "part", "sun"][r.light.max], `${t.light_label}: ${lightTxt}`);
-    if (r.raining || r.rained) badges += badge("rain", r.raining ? t.status.raining : t.rained);
+    if (r.rained && !r.raining) badges += badge("rain", t.rained);
     if (r.factor < 1) badges += badge("hot", `${t.hot} (${r.temp}°)`);
     if (r.factor > 1) badges += badge("cold", `${t.cold} (${r.temp}°)`);
     el.badges.innerHTML = badges;
