@@ -38,6 +38,19 @@
     return card;
   };
 
+  // nothing visible in the top row overlaps, chips sit whole inside it, and the plant starts below
+  const later = [];
+  const topRow = (sr, tag) => {
+    const row = sr.querySelector(".bubbles").getBoundingClientRect();
+    const seen = (e) => getComputedStyle(e).visibility !== "hidden" && e.getBoundingClientRect().width > 0;
+    const chips = [...sr.querySelectorAll(".bubble")].filter(seen).map((e) => e.getBoundingClientRect());
+    const items = [...sr.querySelectorAll(".badges svg, .chip")].filter(seen).map((e) => e.getBoundingClientRect()).concat(chips);
+    const hit = (a, b) => a.left < b.right - 0.5 && b.left < a.right - 0.5 && a.top < b.bottom - 0.5 && b.top < a.bottom - 0.5;
+    ok(items.every((a, i) => items.every((b, j) => i >= j || !hit(a, b))), `${tag}: top row doesn't overlap`);
+    ok(chips.every((c) => c.left >= row.left - 0.5 && c.right <= row.right + 0.5 && c.top < row.bottom), `${tag}: visible chips fit whole`);
+    ok(items.every((b) => b.bottom <= sr.querySelector(".art").getBoundingClientRect().top + 1), `${tag}: plant below the top row`);
+  };
+
   try {
     ok(customElements.get("cute-plant-card"), "custom element is defined");
     ok(window.customCards.some((c) => c.type === "cute-plant-card"), "registered in the card picker");
@@ -52,13 +65,7 @@
         ok(art.getBoundingClientRect().height > 50, `${tag}: art has room in a 3 × 2 tile`);
         ok(sr.querySelector(".chip").textContent.trim() !== "", `${tag}: chip text`);
         ok(sr.querySelectorAll(".bubble").length === 2, `${tag}: two sensor chips`);
-        // nothing in the top row overlaps, and the plant starts below it
-        const row = sr.querySelector(".bubbles").getBoundingClientRect();
-        const items = [...sr.querySelectorAll(".badges svg, .bubble, .chip")]
-          .map((e) => e.getBoundingClientRect()).filter((b) => b.width && b.top < row.bottom);
-        const hit = (a, b) => a.left < b.right - 0.5 && b.left < a.right - 0.5 && a.top < b.bottom - 0.5 && b.top < a.bottom - 0.5;
-        ok(items.every((a, i) => items.every((b, j) => i >= j || !hit(a, b))), `${tag}: top row doesn't overlap`);
-        ok(items.every((b) => b.bottom <= art.getBoundingClientRect().top + 1), `${tag}: plant below the top row`);
+        later.push(() => topRow(sr, tag)); // once laid out and the chips have been fitted
         ok(sr.querySelector("ha-card").getBoundingClientRect().height >= 112, `${tag}: card fills its tile`);
       }
 
@@ -111,6 +118,7 @@
   }
 
   setTimeout(() => {
+    later.forEach((f) => f());
     if (window.watered) ok(window.watered.shadowRoot.querySelector("ha-card").classList.contains("watering"), "yes plays the watering can");
     document.title = out.length && !out.some((l) => l.startsWith("FAIL")) ? "PASS" : "FAIL";
     const pre = document.createElement("pre");

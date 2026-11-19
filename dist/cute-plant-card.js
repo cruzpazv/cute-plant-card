@@ -734,6 +734,20 @@ class CutePlantCard extends HTMLElement {
     for (const ev of ["pointerdown", "pointerup", "click", "keydown"]) this._el.confirm.addEventListener(ev, (e) => e.stopPropagation());
     $(".yes").addEventListener("click", () => { this._ask(false); this._water(); });
     $(".no").addEventListener("click", () => this._ask(false));
+    if (typeof ResizeObserver !== "undefined") new ResizeObserver(() => this._fitChips()).observe(this._el.bubbles);
+  }
+
+  /** Hide sensor chips that don't fit whole in the top row (wrapping alone can't move the first one away). */
+  _fitChips() {
+    const box = this._el.bubbles, kids = [...(box.children || [])];
+    if (!kids.length || !box.getBoundingClientRect) return;
+    kids.forEach((k) => (k.style.visibility = ""));
+    const b = box.getBoundingClientRect();
+    if (!b.width) return; // not laid out yet; the ResizeObserver calls back once it is
+    for (const k of kids) {
+      const r = k.getBoundingClientRect();
+      if (r.left < b.left - 0.5 || r.right > b.right + 0.5 || r.top >= b.bottom - 0.5) k.style.visibility = "hidden";
+    }
   }
 
   setConfig(config) {
@@ -905,6 +919,7 @@ class CutePlantCard extends HTMLElement {
       return `<button type="button" class="bubble${warn ? " warn" : ""}" style="--c:${color}" data-id="${esc(b.id)}" title="${esc(`${b.name}: ${b.v} ${b.unit}`)}"><svg viewBox="0 0 24 24" fill="currentColor">${B.icon}</svg><span>${esc(fmtBubble(b, lang))}</span></button>`;
     }).join("");
     el.card.classList.toggle("has-sensors", r.sensors.length > 0);
+    this._fitChips();
 
     const lines = [name, status];
     if (r.last) lines.push(`${t.last}: ${new Date(r.last).toLocaleString(langOf(this._hass), { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}`);
