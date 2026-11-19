@@ -5,8 +5,7 @@ on:
   pull_request:
 
 jobs:
-  tests:
-    name: Syntax, drawing and version
+  syntax:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -14,13 +13,62 @@ jobs:
         with:
           node-version: 22
       - run: node --check dist/cute-plant-card.js
+      - run: for f in docs/*.mjs tests/*.mjs; do node --check "$f"; done
+      - run: python3 -m json.tool hacs.json > /dev/null && python3 -m json.tool package.json > /dev/null
+
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
       # drawing, countdown, rain/heat, sensor bubbles, actions, Perenual, i18n parity
       - run: node --test "tests/*.test.mjs"
-      - run: node docs/render-preview.mjs
-      # the version badge reads package.json; it must match the card
-      - name: Version matches
+
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # the real card in headless Chrome: SVG parsing, layout in a 3 × 2 tile, CSS, clicks
+      - name: Smoke test in Chrome
         run: |
+          google-chrome --headless=new --no-sandbox --disable-gpu --allow-file-access-from-files \
+            --virtual-time-budget=5000 --dump-dom "file://$PWD/tests/browser.html" > dom.html
+          python3 - <<'PY'
+          import html, re, sys
+          dom = open("dom.html").read()
+          result = re.search(r'<pre id="result">(.*?)</pre>', dom, re.S)
+          print(html.unescape(result.group(1)) if result else dom[-3000:])
+          sys.exit(0 if "<title>PASS</title>" in dom else 1)
+          PY
+
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: sudo apt-get install -y --no-install-recommends librsvg2-bin fonts-comfortaa
+      # every plant type in every state, plus icon, logo and social preview
+      - run: node docs/render-preview.mjs
+      - run: node docs/render-brand.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: previews
+          path: |
+            images/*.png
+            brand/icon.png
+
+  version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # the README badge reads package.json; it must match the card and the changelog
+      - run: |
           card=$(sed -n 's/^const VERSION = "\(.*\)";/\1/p' dist/cute-plant-card.js)
-          pkg=$(node -p "require('./package.json').version")
+          pkg=$(python3 -c "import json; print(json.load(open('package.json'))['version'])")
           echo "card=$card package.json=$pkg"
-          test "$card" = "$pkg"
+          test -n "$card" && test "$card" = "$pkg"
+          grep -qx "## $card" CHANGELOG.md
