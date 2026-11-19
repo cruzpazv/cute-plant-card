@@ -8,8 +8,8 @@ jobs:
   syntax:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
       - run: node --check dist/cute-plant-card.js
@@ -19,8 +19,8 @@ jobs:
   tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
       # drawing, countdown, rain/heat, sensor bubbles, actions, Perenual, i18n parity
@@ -29,7 +29,7 @@ jobs:
   browser:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # the real card in headless Chrome: SVG parsing, layout in a 3 × 2 tile, CSS, clicks
       - name: Smoke test in Chrome
         run: |
@@ -50,15 +50,15 @@ jobs:
   preview:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
       - run: sudo apt-get install -y --no-install-recommends librsvg2-bin fonts-comfortaa
       # every plant type in every state, plus icon, logo and social preview
       - run: node docs/render-preview.mjs
       - run: node docs/render-brand.mjs
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: previews
           path: |
@@ -68,7 +68,7 @@ jobs:
   version:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # the README badge reads package.json; it must match the card and the changelog
       - run: |
           card=$(sed -n 's/^const VERSION = "\(.*\)";/\1/p' dist/cute-plant-card.js)
