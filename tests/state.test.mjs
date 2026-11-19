@@ -88,6 +88,25 @@ test("a rain binary_sensor that is on counts as watering now", () => {
   assert.equal(r.daysLeft, 7);
 });
 
+test("a rain binary_sensor that turned off: when it stopped, but not a restart", () => {
+  const cfg = { species: "generic", outdoor: true, rain_entity: "binary_sensor.lluvia" };
+  const at = (days) => new Date(Date.now() - days * 864e5).toISOString();
+  const boot = { state: "0", last_changed: at(2) };
+  const fresh = (states) => mount(load(), { entity: E, ...cfg }, makeHass(states))._compute(); // own storage: nothing seen yet
+  assert.equal(fresh({ [E]: ago(5), "zone.home": boot, "binary_sensor.lluvia": { state: "off", last_changed: at(1) } }).daysLeft, 6);
+  const restart = fresh({ [E]: ago(5), "zone.home": boot, "binary_sensor.lluvia": { state: "off", last_changed: at(2) } });
+  assert.equal(restart.daysLeft, 2, "a restart resets last_changed: not rain");
+  const local = load();
+  const card = mount(local, { entity: E, ...cfg }, makeHass({ [E]: ago(5), "binary_sensor.lluvia": "on" }));
+  card.hass = makeHass({ [E]: ago(5), "zone.home": { state: "0", last_changed: at(0) }, "binary_sensor.lluvia": { state: "off", last_changed: at(0) } });
+  assert.equal(card._compute().daysLeft, 7, "rain this browser saw is remembered across the restart");
+});
+
+test("a watering time in the future (clock skew) counts as now", () => {
+  const { r } = state({ species: "generic" }, { [E]: new Date(Date.now() + 864e5).toISOString() });
+  assert.equal(r.daysLeft, 7);
+});
+
 test("while it rains outdoors: no need to water", () => {
   const states = { [E]: ago(9), "weather.casa": { state: "rainy", attributes: { temperature: 15 } } };
   const out = state({ species: "generic", outdoor: true, weather_entity: "weather.casa" }, states);
@@ -109,6 +128,7 @@ test("heat shortens the interval, cold lengthens it", () => {
   assert.equal(at(33).interval, 4.2);
   assert.equal(at(12).interval, 9.1);
   assert.equal(at(25, { hot_temperature: 24 }).interval, 5.25, "threshold is configurable");
+  assert.equal(at(30, { hot_temperature: "24" }).interval, 4.2, "a quoted number in YAML still works");
   const { el } = state({ species: "generic", weather_entity: "weather.casa" }, w(30));
   assert.match(el.badges.innerHTML, /Hot weather/);
 });

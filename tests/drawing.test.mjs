@@ -79,3 +79,9 @@ test("leaf, pot and flower colours can be overridden as hex or rgb", () => {
   assert.equal(api.toHex("nope"), null);
   assert.equal(api.toHex([1, 2]), null);
 });
+
+test("monstera holes are cut into the leaf, not painted with the card background", () => {
+  const svg = draw("monstera", 0, "happy");
+  assert.doesNotMatch(svg, /class="cut"|card-background/);
+  assert.ok((svg.match(/ L/g) || []).length > 100, "notched outlines");
+});

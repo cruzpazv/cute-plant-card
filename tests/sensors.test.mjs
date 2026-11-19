@@ -122,3 +122,11 @@ test("a plant temperature sensor drives the heat adjustment when there's no weat
   assert.equal(card._compute().temp, 31);
   assert.equal(card._compute().interval, 5.25);
 });
+
+test("a new sensor on the device shows up when the registry changes", () => {
+  const card = mount(api, { entity: E, device_id: "flora", max_bubbles: 8 }, hass());
+  const before = ids(card).length;
+  const reg = { ...REG, "sensor.flora_ph": { entity_id: "sensor.flora_ph", device_id: "flora" } };
+  card.hass = makeHass({ [E]: ago(1), ...FLORA, "sensor.flora_ph": S(6.5, { unit_of_measurement: "pH" }) }, { entities: reg });
+  assert.equal(ids(card).length, before + 1);
+});

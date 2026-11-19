@@ -71,7 +71,8 @@ test("results are cached for 30 days, so a dashboard full of plants saves quota"
   assert.equal(fetch.urls.length, 2, "second card read the cache");
   assert.equal(card._compute().interval, 6);
   const [key, raw] = [...storage][0];
-  assert.equal(key, "cute-plant-card:perenual:monstera");
+  assert.match(key, /^cute-plant-card:perenual:[0-9a-z]+:monstera$/, "species plus a hash of the API key, never the key itself");
+  assert.doesNotMatch(key, /:k:/);
   storage.set(key, JSON.stringify({ ...JSON.parse(raw), at: Date.now() - 31 * 864e5 }));
   mount(load({ fetch, storage }), { entity: E, perenual_api_key: "k", perenual_query: "monstera" }, makeHass({ [E]: ago(1) }));
   await flush();
@@ -85,7 +86,7 @@ test("errors fall back to the plant type and are retried the next day", async ()
   await flush();
   assert.equal(card._compute().interval, 21);
   assert.match(card._el.card.title, /Perenual: no data \(Missing\/Issue with API Key\)/);
-  const { at } = JSON.parse(storage.get("cute-plant-card:perenual:x"));
+  const { at } = JSON.parse([...storage.values()][0]);
   const left = 30 * 864e5 - (Date.now() - at);
   assert.ok(left > 0 && left <= 864e5, "expires within a day");
 });
@@ -102,4 +103,38 @@ test("no key, no request", async () => {
   mount(load({ fetch }), { entity: E, perenual_query: "monstera" }, makeHass({ [E]: ago(1) }));
   await flush();
   assert.equal(fetch.urls.length, 0);
+});
+
+test("fixing a wrong API key asks again instead of reusing the cached error", async () => {
+  const fetch = fakeFetch((url) => (url.includes("key=bad") ? [401, { message: "bad key" }] : [200, DETAILS]));
+  const storage = new Map();
+  mount(load({ fetch, storage }), { entity: E, perenual_api_key: "bad", perenual_id: 1 }, makeHass({ [E]: ago(1) }));
+  await flush();
+  const card = mount(load({ fetch, storage }), { entity: E, perenual_api_key: "good", perenual_id: 1 }, makeHass({ [E]: ago(1) }));
+  await flush();
+  assert.equal(fetch.urls.length, 2);
+  assert.equal(card._pe.name, "Swiss cheese plant");
+});
+
+test("typing a species in the editor waits for the last keystroke", async () => {
+  const fetch = fakeFetch((url) => (url.includes("species-list") ? [200, { data: [{ id: 1 }] }] : [200, DETAILS]));
+  const card = mount(load({ fetch }), { entity: E, perenual_api_key: "k" }, makeHass({ [E]: ago(1) }));
+  for (const q of ["m", "mo", "mon", "monstera"]) card.setConfig({ entity: E, perenual_api_key: "k", perenual_query: q });
+  await flush();
+  assert.equal(fetch.urls.length, 0, "nothing while typing");
+  await new Promise((r) => setTimeout(r, 1600));
+  await flush();
+  assert.deepEqual(fetch.urls.map((u) => new URL(u).searchParams.get("q")), ["monstera", null]);
+  assert.equal(card._pe.name, "Swiss cheese plant");
+  card.setConfig({ entity: E, perenual_api_key: "k", perenual_query: "monstera", name: "Salón" });
+  assert.equal(card._pe.name, "Swiss cheese plant", "other edits keep the species data");
+});
+
+test("an answer for an old query is dropped", async () => {
+  const fetch = fakeFetch(() => [200, DETAILS]);
+  const card = mount(load({ fetch }), { entity: E, perenual_api_key: "k", perenual_id: 1 }, makeHass({ [E]: ago(1) }));
+  card.setConfig({ entity: E, perenual_api_key: "k", perenual_id: 2 });
+  await flush();
+  assert.equal(card._pe, null, "id 1 arrived after the switch to id 2");
+  clearTimeout(card._peTimer);
 });

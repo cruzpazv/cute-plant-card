@@ -4,7 +4,7 @@
  * MIT License
  */
 
-const VERSION = "0.2.0";
+const VERSION = "0.2.1";
 const TAG = "cute-plant-card";
 const DAY = 864e5;
 const PERENUAL = "https://perenual.com/api/v2";
@@ -118,16 +118,52 @@ function leafPath(shape, L, W, c) {
 
 const place = (x, y, phi, body) => `<g transform="translate(${pt(x, y)}) rotate(${r2(phi - 90)})">${body}</g>`;
 
+function bezier(p0, p1, p2, p3, n) {
+  const out = [];
+  for (let i = 0; i <= n; i++) {
+    const u = i / n, v = 1 - u, k = [v * v * v, 3 * v * v * u, 3 * v * u * u, u * u * u];
+    out.push([0, 1].map((j) => k[0] * p0[j] + k[1] * p1[j] + k[2] * p2[j] + k[3] * p3[j]));
+  }
+  return out;
+}
+
+/** Where a polyline crosses x, searching from point i on: [segment index, point]. */
+function crossX(pts, x, i) {
+  for (let j = i; j < pts.length - 1; j++) {
+    const [x0, y0] = pts[j], [x1, y1] = pts[j + 1];
+    if (x0 !== x1 && (x0 - x) * (x1 - x) <= 0) return [j, [x, y0 + ((y1 - y0) * (x - x0)) / (x1 - x0)]];
+  }
+  return null;
+}
+
+/** The monstera heart with real notches cut into its outline, so any card background (even a transparent one) shows through. */
+function monsteraPath(L, W, c) {
+  const m = (t) => c * t * t, hw = 0.85;
+  const side = (s) => { // s = -1: upper edge, base → tip; s = 1: lower edge, tip → base
+    let pts = bezier([0, 0], [-L * 0.14, s * W * 1.25], [L * 0.5, m(0.5) + s * W * 1.2], [L, c], 24);
+    if (s > 0) pts = pts.reverse();
+    const out = [];
+    let i = 0;
+    for (const t of s < 0 ? [0.34, 0.6] : [0.6, 0.34]) {
+      const xc = L * (t + 0.06), C = crossX(pts, xc, i);
+      if (!C) continue;
+      const [[x0, y0], [x1, y1]] = [pts[C[0]], pts[C[0] + 1]];
+      const w = Math.max(0.25, (hw * Math.abs(x1 - x0)) / Math.hypot(x1 - x0, y1 - y0)); // same mouth width however steep the edge
+      const A = crossX(pts, xc + s * w, i), B = A && crossX(pts, xc - s * w, A[0]);
+      if (!B) continue;
+      const yi = m(t) + s * W * 0.38;
+      out.push(...pts.slice(i, A[0] + 1), A[1], [L * t + s * 0.3, yi], [L * t - s * 0.3, yi], B[1]);
+      i = B[0] + 1;
+    }
+    return out.concat(pts.slice(i));
+  };
+  return `M${[...side(-1), ...side(1).slice(1)].map(([px, py]) => pt(px, py)).join(" L")}Z`;
+}
+
 function leafEl(shape, x, y, phi, L, W, c, col) {
-  let cuts = "";
-  if (shape === "monstera")
-    for (const t of [0.36, 0.56, 0.76])
-      for (const s of [-1, 1]) {
-        const yy = c * t * t;
-        cuts += `<path class="cut" d="M${pt(L * (t + 0.06), yy + s * W * (1.15 - t * 0.6))} L${pt(L * t, yy + s * W * 0.38)}"/>`;
-      }
+  const d = shape === "monstera" ? monsteraPath(L, W, c) : leafPath(shape, L, W, c);
   return place(x, y, phi,
-    `<path d="${leafPath(shape, L, W, c)}" fill="${col.leaf}" stroke="${col.leafDark}" stroke-width=".8" stroke-linejoin="round"/>${cuts}` +
+    `<path d="${d}" fill="${col.leaf}" stroke="${col.leafDark}" stroke-width=".8" stroke-linejoin="round"/>` +
     `<path d="M0,0 Q${pt(L / 2, 0)} ${pt(L * 0.88, c * 0.77)}" fill="none" stroke="${col.vein}" stroke-width=".7" stroke-linecap="round" opacity=".85"/>`);
 }
 
@@ -422,6 +458,8 @@ const T = {
     light: ["", "Shade", "Part shade", "Full sun"],
     light_label: "Light",
     confirm: "Watered it?",
+    yes: "Yes, I watered it",
+    no: "Not yet",
     not_waterable: "This entity can't be marked as watered",
     perenual_error: "Perenual: no data",
     species: {
@@ -465,6 +503,8 @@ const T = {
     light: ["", "Sombra", "Semisombra", "Sol directo"],
     light_label: "Luz",
     confirm: "¿La has regado?",
+    yes: "Sí, la he regado",
+    no: "Todavía no",
     not_waterable: "Esta entidad no se puede marcar como regada",
     perenual_error: "Perenual: sin datos",
     species: {
@@ -550,8 +590,8 @@ const CSS = `
 [hidden]{display:none!important}
 ha-card{display:block;height:100%;min-height:112px;position:relative;overflow:hidden;cursor:pointer;container-type:size;
   -webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;outline:none}
-ha-card:focus-visible{box-shadow:0 0 0 2px var(--primary-color)}
-.wrap{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;padding:6px;box-sizing:border-box}
+.wrap{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;padding:6px;box-sizing:border-box;outline:none;border-radius:inherit}
+.wrap:focus-visible{box-shadow:inset 0 0 0 2px var(--primary-color)}
 .art{flex:1 1 auto;min-height:0;width:100%;display:block;overflow:visible}
 /* long names wrap (up to 3 lines) and the plant, which only takes the space left, shrinks to fit */
 .name{flex:none;max-width:100%;font-size:12px;line-height:15px;font-weight:500;color:var(--primary-text-color);text-align:center;
@@ -602,7 +642,6 @@ ha-card.watering .art{animation:hop .5s ease 1.4s}
 .confirm button{width:34px;height:34px;border:none;border-radius:50%;font-size:17px;font-weight:700;cursor:pointer;line-height:1}
 .confirm .yes{background:var(--success-color,#43a047);color:#fff}
 .confirm .no{background:var(--secondary-background-color,#e5e5e5);color:var(--primary-text-color)}
-.cut{stroke:var(--ha-card-background,var(--card-background-color,#fff));stroke-width:1.7;stroke-linecap:round}
 .spin{transform-box:fill-box;transform-origin:center;animation:spin 14s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .shimmer{animation:shim 2s ease-in-out infinite}
@@ -710,14 +749,14 @@ class CutePlantCard extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
-    this.shadowRoot.innerHTML = `<style>${CSS}</style><ha-card tabindex="0" role="button">
-      <div class="wrap"><svg class="art" viewBox="0 0 100 100" preserveAspectRatio="xMidYMax meet"></svg><div class="name"></div><div class="sub"></div></div>
+    this.shadowRoot.innerHTML = `<style>${CSS}</style><ha-card>
+      <div class="wrap" tabindex="0" role="button"><svg class="art" viewBox="0 0 100 100" preserveAspectRatio="xMidYMax meet"></svg><div class="name"></div><div class="sub"></div></div>
       <div class="top"><div class="badges"></div><div class="bubbles"></div><div class="chip"></div></div>
       <svg class="can" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">${CAN}</svg>
       <div class="confirm" hidden><div class="q"></div><div class="btns"><button class="yes" type="button">✓</button><button class="no" type="button">✕</button></div></div>
     </ha-card>`;
     const $ = (s) => this.shadowRoot.querySelector(s);
-    this._el = { card: $("ha-card"), art: $(".art"), name: $(".name"), sub: $(".sub"), chip: $(".chip"), badges: $(".badges"), confirm: $(".confirm"), q: $(".q"), bubbles: $(".bubbles") };
+    this._el = { card: $("ha-card"), wrap: $(".wrap"), yes: $(".yes"), no: $(".no"), art: $(".art"), name: $(".name"), sub: $(".sub"), chip: $(".chip"), badges: $(".badges"), confirm: $(".confirm"), q: $(".q"), bubbles: $(".bubbles") };
     const bub = $(".bubbles");
     for (const ev of ["pointerdown", "pointerup", "keydown"]) bub.addEventListener(ev, (e) => e.stopPropagation());
     bub.addEventListener("click", (e) => {
@@ -734,7 +773,7 @@ class CutePlantCard extends HTMLElement {
     for (const ev of ["pointerdown", "pointerup", "click", "keydown"]) this._el.confirm.addEventListener(ev, (e) => e.stopPropagation());
     $(".yes").addEventListener("click", () => { this._ask(false); this._water(); });
     $(".no").addEventListener("click", () => this._ask(false));
-    if (typeof ResizeObserver !== "undefined") new ResizeObserver(() => this._fitChips()).observe(this._el.bubbles);
+    if (typeof ResizeObserver !== "undefined") this._ro = new ResizeObserver(() => this._fitChips());
   }
 
   /** Hide sensor chips that don't fit whole in the top row (wrapping alone can't move the first one away). */
@@ -752,11 +791,12 @@ class CutePlantCard extends HTMLElement {
 
   setConfig(config) {
     if (!config || !config.entity) throw new Error("cute-plant-card: 'entity' is required");
+    const again = !!this._config;
     this._config = { ...DEFAULTS, ...config };
-    this._pe = null;
-    this._peKey = null;
+    for (const k of ["hot_temperature", "cold_temperature"]) this._config[k] = Number(this._config[k]); // YAML may give "30"
+    if (this._peCacheKey() !== this._peKey) [this._pe, this._peKey] = [null, null];
     this._sig = null;
-    if (this._hass) this._loadPerenual();
+    if (this._hass) this._loadPerenual(again); // again = edited in the card editor: wait until typing stops
     this._render();
   }
 
@@ -773,9 +813,14 @@ class CutePlantCard extends HTMLElement {
   connectedCallback() {
     clearInterval(this._tick);
     this._tick = setInterval(() => this._render(), 10 * 60e3); // days pass even when nothing changes
+    this._ro?.observe(this._el.bubbles);
     this._render();
   }
-  disconnectedCallback() { clearInterval(this._tick); }
+  disconnectedCallback() {
+    clearInterval(this._tick);
+    clearTimeout(this._peTimer);
+    this._ro?.disconnect();
+  }
 
   /* ── state ── */
 
@@ -785,10 +830,26 @@ class CutePlantCard extends HTMLElement {
     const s = id && this._hass.states[id];
     if (!s) return null;
     const dom = id.split(".")[0];
-    if (dom === "binary_sensor") return s.state === "on" ? Date.now() : Date.parse(s.last_changed);
+    if (dom === "binary_sensor") return this._rainSensor(id, s);
     if (dom === "input_datetime" && s.attributes.timestamp != null && s.attributes.has_date !== false) return s.attributes.timestamp * 1000;
     const v = Date.parse(String(s.state).replace(" ", "T"));
     return Number.isNaN(v) ? null : v;
+  }
+
+  /**
+   * A rain binary_sensor: on = raining now. When off, last_changed is when it stopped, except right after a
+   * Home Assistant restart, which resets last_changed everywhere. Then fall back to what this browser saw last.
+   */
+  _rainSensor(id, s) {
+    const key = `${TAG}:rain:${id}`, now = Date.now();
+    if (s.state === "on") {
+      if (!(now - (lsGet(key) || 0) < 60e3)) lsSet(key, now);
+      return now;
+    }
+    const seen = lsGet(key), changed = Date.parse(s.last_changed);
+    const boot = ["zone.home", this._config.entity].map((e) => Date.parse(this._hass.states[e]?.last_changed));
+    const restart = boot.some((b) => Math.abs(b - changed) < 60e3);
+    return Math.max(seen || 0, Number.isNaN(changed) || restart ? 0 : changed) || null;
   }
 
   _num(id, attr) {
@@ -817,7 +878,7 @@ class CutePlantCard extends HTMLElement {
     const last = this._ts(c.entity);
     const rainTs = c.outdoor ? this._ts(c.rain_entity) : null;
     const rained = !!(rainTs && rainTs <= now && (!last || rainTs > last));
-    const eff = raining ? now : Math.max(last || 0, rainTs && rainTs <= now ? rainTs : 0) || null;
+    const eff = raining ? now : Math.min(now, Math.max(last || 0, rainTs && rainTs <= now ? rainTs : 0)) || null; // clock skew: never in the future
 
     let daysLeft = null, h = 1, elapsed = null;
     const daysSensor = c.days_entity ? this._num(c.days_entity) : null;
@@ -854,9 +915,11 @@ class CutePlantCard extends HTMLElement {
       .map((s) => (typeof s === "string" ? s : s?.entity)).filter(Boolean);
     const ids = [...explicit];
     const dev = c.device_id || (c.plant_entity && reg[c.plant_entity]?.device_id);
-    if (dev)
-      for (const e of Object.values(reg))
-        if (e.device_id === dev && e.entity_id.startsWith("sensor.") && !e.hidden && !ids.includes(e.entity_id)) ids.push(e.entity_id);
+    if (dev) {
+      if (this._devCache?.reg !== reg || this._devCache.dev !== dev) // the registry object only changes when the registry does
+        this._devCache = { reg, dev, ids: Object.values(reg).filter((e) => e.device_id === dev && e.entity_id?.startsWith("sensor.") && !e.hidden).map((e) => e.entity_id) };
+      for (const id of this._devCache.ids) if (!ids.includes(id)) ids.push(id);
+    }
     const out = [];
     for (const id of ids) {
       const st = H.states[id], v = parseFloat(st?.state);
@@ -929,24 +992,39 @@ class CutePlantCard extends HTMLElement {
     if (this._pe?.error) lines.push(`${t.perenual_error} (${this._pe.error})`);
     else if (this._pe) lines.push(`Perenual: ${[this._pe.name, this._pe.sci].filter(Boolean).join(" · ")}`);
     el.card.title = lines.join("\n");
-    el.card.setAttribute("aria-label", `${name}. ${status}`);
+    el.wrap.setAttribute("aria-label", `${name}. ${status}`);
     el.q.textContent = t.confirm;
+    el.yes.setAttribute("aria-label", t.yes);
+    el.no.setAttribute("aria-label", t.no);
   }
 
   /* ── perenual ── */
 
-  async _loadPerenual() {
+  /** Cache key: the species plus a hash of the API key, so fixing a wrong key doesn't hit yesterday's cached error. */
+  _peCacheKey() {
     const c = this._config;
-    if (!c || !c.perenual_api_key || (!c.perenual_id && !c.perenual_query)) return;
-    const key = `${TAG}:perenual:${c.perenual_id || String(c.perenual_query).trim().toLowerCase()}`;
-    if (this._peKey === key) return;
+    if (!c || !c.perenual_api_key || (!c.perenual_id && !c.perenual_query)) return null;
+    let h = 5381;
+    for (const ch of String(c.perenual_api_key)) h = ((h * 33) ^ ch.charCodeAt(0)) >>> 0;
+    return `${TAG}:perenual:${h.toString(36)}:${c.perenual_id || String(c.perenual_query).trim().toLowerCase()}`;
+  }
+
+  async _loadPerenual(debounce = false) {
+    const c = this._config, key = this._peCacheKey();
+    if (!key || this._peKey === key) return;
     this._peKey = key;
+    clearTimeout(this._peTimer);
     const cached = lsGet(key);
     if (cached && Date.now() - cached.at < CACHE_DAYS * DAY) {
       this._pe = cached.data;
       return this._render();
     }
+    if (debounce) { // in the editor every keystroke is a new config: only ask for what's left once typing stops
+      await new Promise((r) => (this._peTimer = setTimeout(r, 1500)));
+      if (this._peKey !== key) return;
+    }
     const k = encodeURIComponent(c.perenual_api_key);
+    let data;
     try {
       let id = c.perenual_id;
       if (!id) {
@@ -956,13 +1034,15 @@ class CutePlantCard extends HTMLElement {
       }
       const s = await getJSON(`${PERENUAL}/species/details/${id}?key=${k}`);
       const sci = Array.isArray(s.scientific_name) ? s.scientific_name[0] : s.scientific_name;
-      this._pe = { id, name: s.common_name, sci, interval: perenualInterval(s), light: perenualLight(s.sunlight) };
-      lsSet(key, { at: Date.now(), data: this._pe });
+      data = { id, name: s.common_name, sci, interval: perenualInterval(s), light: perenualLight(s.sunlight) };
+      lsSet(key, { at: Date.now(), data });
     } catch (e) {
-      this._pe = { error: String(e?.message || e) };
-      lsSet(key, { at: Date.now() - (CACHE_DAYS - 1) * DAY, data: this._pe }); // retry tomorrow, spare the daily quota
+      data = { error: String(e?.message || e) };
+      lsSet(key, { at: Date.now() - (CACHE_DAYS - 1) * DAY, data }); // retry tomorrow, spare the daily quota
     }
-    if (this._peKey === key) this._render();
+    if (this._peKey !== key) return; // the config changed while this was on its way
+    this._pe = data;
+    this._render();
   }
 
   /* ── interaction ── */

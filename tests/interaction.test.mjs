@@ -111,3 +111,12 @@ test("the card registers itself for the card picker", () => {
   assert.equal(api.defined["cute-plant-card"], api.CutePlantCard);
   assert.equal(api.window.customCards.filter((c) => c.type === "cute-plant-card").length, 1);
 });
+
+test("screen readers get one button for the plant and named yes/no buttons", () => {
+  const api = load();
+  const card = mount(api, { entity: E, name: "Fern" }, makeHass({ [E]: ago(1) }, { language: "es" }));
+  assert.match(card._el.wrap.attrs["aria-label"], /^Fern\. /);
+  assert.equal(card._el.yes.attrs["aria-label"], "Sí, la he regado");
+  assert.equal(card._el.no.attrs["aria-label"], "Todavía no");
+  assert.equal(card._el.card.attrs.role, undefined, "the card itself isn't a button around other buttons");
+});

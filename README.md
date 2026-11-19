@@ -59,7 +59,7 @@ name: Monstera Salón
 | `species` | `auto` | `auto`, `generic`, `monstera`, `palm`, `pothos`, `fern`, `snake`, `succulent`, `cactus`, `herb`, `flower`. |
 | `interval` | from species | Days between waterings. If it's not set, the card uses Perenual, then the plant type's default. |
 | `outdoor` | `false` | When `true`, rain counts as watering. |
-| `rain_entity` | | Last rain: an `input_datetime`, a timestamp `sensor`, or a rain `binary_sensor`. Used only when `outdoor` is `true`. |
+| `rain_entity` | | Last rain: an `input_datetime`, a timestamp `sensor`, or a rain `binary_sensor` (on = raining; when it turns off, the time it stopped counts, but a Home Assistant restart doesn't). Used only when `outdoor` is `true`. |
 | `weather_entity` | | Its `temperature` attribute adjusts the interval, and a rainy state (when `outdoor` is `true`) shows "no need to water". |
 | `temperature_entity` | | A temperature sensor; takes priority over the weather entity's temperature. |
 | `hot_temperature` | `28` | At or above this temperature the interval is multiplied by ×0.75; at 5° above it, by ×0.6. |
