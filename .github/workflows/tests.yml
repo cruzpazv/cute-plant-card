@@ -1,0 +1,25 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  tests:
+    name: Syntax, drawing and version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --check dist/cute-plant-card.js
+      # every plant type in every state must draw without throwing
+      - run: node docs/render-preview.mjs
+      # the version badge reads package.json; it must match the card
+      - name: Version matches
+        run: |
+          card=$(sed -n 's/^const VERSION = "\(.*\)";/\1/p' dist/cute-plant-card.js)
+          pkg=$(node -p "require('./package.json').version")
+          echo "card=$card package.json=$pkg"
+          test "$card" = "$pkg"
