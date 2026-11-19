@@ -1,17 +1,23 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="images/logo-dark.png">
-    <img src="images/logo-light.png" alt="Cute Plant Card" width="430">
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/cruzpazv/cute-plant-card/main/images/logo-dark.png">
+    <img src="https://raw.githubusercontent.com/cruzpazv/cute-plant-card/main/images/logo-light.png" alt="Cute Plant Card" width="430">
   </picture>
 </p>
 
-[![hacs](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz)
+[![HACS](https://img.shields.io/badge/HACS-Custom-orange)](https://hacs.xyz/docs/faq/custom_repositories)
+[![Release](https://img.shields.io/github/v/release/cruzpazv/cute-plant-card?label=release)](https://github.com/cruzpazv/cute-plant-card/releases)
+[![HACS validation](https://img.shields.io/github/actions/workflow/status/cruzpazv/cute-plant-card/hacs.yml?branch=main&label=HACS%20validation&logo=github)](https://github.com/cruzpazv/cute-plant-card/actions/workflows/hacs.yml)
+[![Tests](https://img.shields.io/github/actions/workflow/status/cruzpazv/cute-plant-card/tests.yml?branch=main&label=Tests&logo=github)](https://github.com/cruzpazv/cute-plant-card/actions/workflows/tests.yml)
+[![License](https://img.shields.io/github/license/cruzpazv/cute-plant-card?color=yellow)](LICENSE)
+[![Version](https://img.shields.io/github/package-json/v/cruzpazv/cute-plant-card?label=VERSION&color=blue)](dist/cute-plant-card.js)
+[![Home Assistant](https://img.shields.io/badge/dynamic/json?label=HOME%20ASSISTANT&color=41BDF5&prefix=%3E%3D&url=https%3A%2F%2Fraw.githubusercontent.com%2Fcruzpazv%2Fcute-plant-card%2Fmain%2Fhacs.json&query=%24.homeassistant)](https://www.home-assistant.io/)
 
 A tiny Home Assistant card with a potted plant that has a face. Right after you water it the plant stands tall, green and smiling. As the days pass it fades, its leaves droop and fall, and when it's time to water it looks sad and cries a little.
 
 It takes the default size of a 3 × 2 tile in the sections view. Tap the card to log a watering; hold it to open the entity's more-info dialog.
 
-![All plant types in every state](images/preview-light.png)
+![All plant types in every state](https://raw.githubusercontent.com/cruzpazv/cute-plant-card/main/images/preview-light.png)
 
 ## Features
 
