@@ -30,12 +30,35 @@ test("English and Spanish have the same keys", () => {
 const fields = (schema) => schema.flatMap((s) => (s.schema ? fields(s.schema) : [s.name]));
 
 test("every editor field has a label in both languages", () => {
-  for (const lang of ["en", "es"]) {
-    const local = load({ language: lang });
-    const form = local.CutePlantCard.getConfigForm();
-    for (const name of fields(form.schema)) assert.ok(form.computeLabel({ name }), `${lang}: ${name}`);
-    assert.equal(form.computeLabel({ name: "entity" }), local.T[lang].labels.entity);
-  }
+  for (const lang of ["en", "es"])
+    for (const name of fields(api.SCHEMA(api.T[lang]))) assert.ok(api.T[lang].labels[name], `${lang}: ${name}`);
+});
+
+test("the editor shows on-by-default switches as on", () => {
+  const editor = new api.CutePlantCardEditor();
+  editor.setConfig({ type: "custom:cute-plant-card", entity: "input_button.regar" });
+  editor.hass = { locale: { language: "es" } };
+  const form = editor.children[0];
+  assert.equal(form.tagName, "ha-form");
+  for (const k of ["show_name", "show_light", "confirm", "show_bubbles"]) assert.equal(form.data[k], true, k);
+  assert.equal(form.data.entity, "input_button.regar");
+  assert.equal(form.computeLabel({ name: "show_name" }), "Mostrar nombre");
+});
+
+test("the editor keeps defaults and empty fields out of the YAML", () => {
+  const editor = new api.CutePlantCardEditor();
+  editor.setConfig({ type: "custom:cute-plant-card", entity: "input_button.regar" });
+  editor.hass = { locale: { language: "en" } };
+  const form = editor.children[0];
+  let out;
+  editor.dispatchEvent = (e) => { out = e.detail.config; };
+  form.fire("value-changed", { detail: { value: { ...form.data, show_name: false, name: "", sensors: [] } } });
+  assert.deepEqual(out, { type: "custom:cute-plant-card", entity: "input_button.regar", show_name: false });
+});
+
+test("the card opens its own editor", () => {
+  assert.equal(api.CutePlantCard.getConfigElement().tagName, "cute-plant-card-editor");
+  assert.equal(api.defined["cute-plant-card-editor"], api.CutePlantCardEditor);
 });
 
 test("every editor field is documented in the README", () => {

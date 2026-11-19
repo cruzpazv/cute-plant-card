@@ -86,19 +86,23 @@ test("the attributes of a core plant entity become bubbles", () => {
   assert.deepEqual(card._compute().sensors.map((b) => b.type), ["moisture", "temperature", "illuminance", "battery"]);
 });
 
-test("bubbles alternate left and right, and out-of-range values get a ring", () => {
+test("sensor chips sit in the top row in order, out-of-range ones in red", () => {
   const card = mount(api, { entity: E, device_id: "flora" }, hass());
-  const [left, right] = card._el.cols;
-  assert.match(left.innerHTML, /sensor\.flora_moisture/);
-  assert.match(right.innerHTML, /sensor\.flora_temperature/);
-  assert.match(left.innerHTML, /class="bubble warn"[^>]*sensor\.flora_moisture/, "12 % soil moisture is too dry");
-  assert.doesNotMatch(right.innerHTML, /warn/);
-  assert.match(left.innerHTML + right.innerHTML, /<span>24.4°<\/span>/);
+  const html = card._el.bubbles.innerHTML;
+  const order = [...html.matchAll(/data-id="([^"]+)"/g)].map((m) => m[1]);
+  assert.deepEqual(order, ["sensor.flora_moisture", "sensor.flora_temperature", "sensor.flora_illuminance", "sensor.flora_conductivity"]);
+  assert.match(html, /class="bubble warn" style="--c:var\(--error-color[^"]*" data-id="sensor\.flora_moisture"/, "12 % soil moisture is too dry");
+  assert.equal((html.match(/warn/g) || []).length, 1);
+  assert.match(html, /<span>24.4°<\/span>/);
+  assert.ok(card._el.card.classList.contains("has-sensors"), "the plant moves down to make room");
+  assert.match(card._el.card.title, /sensor\.flora_moisture: 12%\n/, "every reading in the tooltip, even chips that don't fit");
+  const none = mount(api, { entity: E }, hass());
+  assert.ok(!none._el.card.classList.contains("has-sensors"));
 });
 
 test("Fahrenheit temperatures aren't judged against Celsius limits", () => {
   const card = mount(api, { entity: E, sensors: ["sensor.f"] }, makeHass({ [E]: ago(1), "sensor.f": S(95, { device_class: "temperature", unit_of_measurement: "°F" }) }));
-  assert.doesNotMatch(card._el.cols[0].innerHTML, /warn/);
+  assert.doesNotMatch(card._el.bubbles.innerHTML, /warn/);
 });
 
 test("tapping a bubble opens that sensor", () => {

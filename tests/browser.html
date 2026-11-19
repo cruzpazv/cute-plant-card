@@ -51,7 +51,14 @@
         ok(art.querySelector("ellipse") instanceof SVGElement, `${tag}: art parsed as SVG`);
         ok(art.getBoundingClientRect().height > 50, `${tag}: art has room in a 3 × 2 tile`);
         ok(sr.querySelector(".chip").textContent.trim() !== "", `${tag}: chip text`);
-        ok(sr.querySelectorAll(".bubble").length === 2, `${tag}: two sensor bubbles`);
+        ok(sr.querySelectorAll(".bubble").length === 2, `${tag}: two sensor chips`);
+        // nothing in the top row overlaps, and the plant starts below it
+        const row = sr.querySelector(".bubbles").getBoundingClientRect();
+        const items = [...sr.querySelectorAll(".badges svg, .bubble, .chip")]
+          .map((e) => e.getBoundingClientRect()).filter((b) => b.width && b.top < row.bottom);
+        const hit = (a, b) => a.left < b.right - 0.5 && b.left < a.right - 0.5 && a.top < b.bottom - 0.5 && b.top < a.bottom - 0.5;
+        ok(items.every((a, i) => items.every((b, j) => i >= j || !hit(a, b))), `${tag}: top row doesn't overlap`);
+        ok(items.every((b) => b.bottom <= art.getBoundingClientRect().top + 1), `${tag}: plant below the top row`);
         ok(sr.querySelector("ha-card").getBoundingClientRect().height >= 112, `${tag}: card fills its tile`);
       }
 
@@ -80,10 +87,25 @@
     bubble.click();
     ok(info === "sensor.t", "clicking a bubble opens its sensor");
 
-    const form = customElements.get("cute-plant-card").getConfigForm();
     const named = mount({ species: "fern", name: "Hidden", show_name: false }, hass(1));
     ok(!shown(named.shadowRoot.querySelector(".name")), "show_name: false hides the name");
-    ok(Array.isArray(form.schema) && form.computeLabel({ name: "entity" }), "editor form");
+    const editor = customElements.get("cute-plant-card").getConfigElement();
+    editor.setConfig({ entity: "input_button.p" });
+    editor.hass = hass(1);
+    const form = editor.querySelector("ha-form");
+    ok(form && form.data.show_name === true && form.computeLabel({ name: "entity" }), "editor shows defaults as on");
+
+    // a long name wraps instead of being cut, and the plant shrinks to fit
+    const short = mount({ species: "monstera", name: "Monstera" }, hass(1));
+    const long = mount({ species: "monstera", name: "Monstera deliciosa del salón grande" }, hass(1));
+    const nm = long.shadowRoot.querySelector(".name").getBoundingClientRect();
+    const artL = long.shadowRoot.querySelector(".art").getBoundingClientRect();
+    const artS = short.shadowRoot.querySelector(".art").getBoundingClientRect();
+    const cardL = long.shadowRoot.querySelector("ha-card").getBoundingClientRect();
+    ok(nm.height >= 28, `long name wraps (${Math.round(nm.height)} px tall)`);
+    ok(nm.height <= 46, "at most three lines");
+    ok(artL.height < artS.height && artL.height > 25, `plant shrinks but stays visible (${Math.round(artL.height)} vs ${Math.round(artS.height)} px)`);
+    ok(artL.bottom <= nm.top + 1 && nm.bottom <= cardL.bottom + 1, "plant, name and card don't overlap");
   } catch (e) {
     out.push(`FAIL exception: ${e.stack || e}`);
   }

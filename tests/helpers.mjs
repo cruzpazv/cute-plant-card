@@ -13,16 +13,17 @@ export const flush = async () => { for (let i = 0; i < 5; i++) await new Promise
 
 const EXPOSE = [
   "plantSVG", "palette", "resolveKind", "perenualInterval", "perenualLight", "sensorType", "fmtBubble",
-  "toHex", "T", "SPECIES", "BUBBLE", "ICON", "CAN", "SCHEMA", "VERSION", "TAG", "CutePlantCard",
+  "toHex", "T", "SPECIES", "BUBBLE", "ICON", "CAN", "SCHEMA", "DEFAULTS", "VERSION", "TAG", "CutePlantCard", "CutePlantCardEditor",
 ];
 
 export class FakeEl {
   constructor() {
     Object.assign(this, { innerHTML: "", textContent: "", hidden: undefined, className: "", title: "", attrs: {}, listeners: {}, dataset: {}, offsetWidth: 1 });
     const set = new Set();
-    this.classList = { add: (c) => set.add(c), remove: (c) => set.delete(c), contains: (c) => set.has(c) };
+    this.classList = { add: (c) => set.add(c), remove: (c) => set.delete(c), contains: (c) => set.has(c), toggle: (c, on) => (on ? set.add(c) : set.delete(c)) };
   }
   setAttribute(k, v) { this.attrs[k] = v; }
+  appendChild(child) { (this.children ||= []).push(child); return child; }
   addEventListener(type, fn) { (this.listeners[type] ||= []).push(fn); }
   fire(type, ev = {}) {
     for (const fn of this.listeners[type] || []) fn({ button: 0, stopPropagation() {}, preventDefault() {}, ...ev });
@@ -39,13 +40,14 @@ export function load({ fetch, storage = new Map(), language = "en" } = {}) {
       return this.shadowRoot;
     }
     dispatchEvent(e) { events.push(e); return true; }
+    appendChild(child) { (this.children ||= []).push(child); return child; }
   }
   const defined = {};
   const env = {
     HTMLElement,
     customElements: { get: (t) => defined[t], define: (t, c) => { defined[t] = c; } },
     window: { customCards: [] },
-    document: { querySelector: () => null },
+    document: { querySelector: () => null, createElement: (tag) => Object.assign(new FakeEl(), { tagName: tag }) },
     navigator: { language },
     CustomEvent: class { constructor(type, o = {}) { this.type = type; this.detail = o.detail; } },
     localStorage: { getItem: (k) => storage.get(k) ?? null, setItem: (k, v) => storage.set(k, String(v)) },

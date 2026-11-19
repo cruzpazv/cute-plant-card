@@ -4,7 +4,7 @@
  * MIT License
  */
 
-const VERSION = "0.1.2";
+const VERSION = "0.2.0";
 const TAG = "cute-plant-card";
 const DAY = 864e5;
 const PERENUAL = "https://perenual.com/api/v2";
@@ -493,7 +493,6 @@ const T = {
 };
 
 const langOf = (hass) => (String(hass?.locale?.language || hass?.language || navigator.language || "en").toLowerCase().startsWith("es") ? "es" : "en");
-const uiLang = () => langOf(document.querySelector("home-assistant")?.hass);
 
 const ICON = {
   sun: `<circle cx="12" cy="12" r="4.5" fill="#ffc83d"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8" stroke="#ffc83d" stroke-width="2" stroke-linecap="round"/>`,
@@ -509,7 +508,7 @@ const BUBBLE = {
   moisture: { order: 0, color: "#3d8fe0", lo: 15, hi: 70, icon: `<path d="M12 3c3.5 4.6 6 8 6 11a6 6 0 0 1-12 0c0-3 2.5-6.4 6-11z"/>` },
   temperature: { order: 1, color: "#e5733d", lo: 8, hi: 35, icon: `<path d="M10 4a2 2 0 0 1 4 0v9.3a4 4 0 1 1-4 0z"/>` },
   humidity: { order: 2, color: "#2fa9bf", lo: 25, hi: 90, icon: `<path d="M8 5c2.4 3.2 4 5.5 4 7.6a4 4 0 0 1-8 0C4 10.5 5.6 8.2 8 5zM17 10c1.8 2.4 3 4.1 3 5.7a3 3 0 0 1-6 0c0-1.6 1.2-3.3 3-5.7z"/>` },
-  illuminance: { order: 3, color: "#e9a600", icon: `<circle cx="12" cy="12" r="4.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>` },
+  illuminance: { order: 3, color: "#c98a00", icon: `<circle cx="12" cy="12" r="4.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>` },
   conductivity: { order: 4, color: "#8b6fd6", lo: 350, hi: 2000, icon: `<path d="M13 2L5 14h6l-1 8 8-12h-6z"/>` },
   battery: { order: 5, color: "#4caf50", lo: 15, icon: `<path d="M9.5 2.5h5v2H17a1 1 0 0 1 1 1V21a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V5.5a1 1 0 0 1 1-1h2.5z"/>` },
   other: { order: 9, color: "#8a9bb0", icon: `<circle cx="12" cy="12" r="5"/>` },
@@ -554,19 +553,22 @@ ha-card{display:block;height:100%;min-height:112px;position:relative;overflow:hi
 ha-card:focus-visible{box-shadow:0 0 0 2px var(--primary-color)}
 .wrap{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;padding:6px;box-sizing:border-box}
 .art{flex:1 1 auto;min-height:0;width:100%;display:block;overflow:visible}
-.name{flex:none;max-width:100%;font-size:12px;line-height:15px;font-weight:500;color:var(--primary-text-color);
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
+/* long names wrap (up to 3 lines) and the plant, which only takes the space left, shrinks to fit */
+.name{flex:none;max-width:100%;font-size:12px;line-height:15px;font-weight:500;color:var(--primary-text-color);text-align:center;
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;overflow-wrap:anywhere;text-wrap:balance}
 .sub{display:none;flex:none;max-width:100%;font-size:11px;line-height:14px;color:var(--secondary-text-color);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @container (min-height:170px){.name{font-size:14px;line-height:18px}.sub{display:block}}
-.chip{position:absolute;top:6px;right:6px;padding:1px 6px;border-radius:9px;font-size:11px;line-height:16px;font-weight:700;
-  --c:var(--success-color,#43a047);color:var(--c);background:color-mix(in srgb,var(--c) 16%,transparent)}
+.top{position:absolute;top:6px;left:6px;right:6px;display:flex;align-items:flex-start;gap:3px;pointer-events:none}
+.chip,.bubble{flex:none;box-sizing:border-box;padding:1px 6px;border-radius:9px;white-space:nowrap;
+  font:700 11px/16px var(--ha-font-family-body,system-ui,sans-serif);color:var(--c);background:color-mix(in srgb,var(--c) 16%,transparent)}
+.chip{margin-left:auto;--c:var(--success-color,#43a047)}
 .chip.soon{--c:var(--warning-color,#f4a01b)}
 .chip.water{--c:var(--error-color,#e5533d)}
 .chip.rain{--c:#3d8fe0}
 .chip.unknown{--c:var(--secondary-text-color,#888)}
 .chip:empty{display:none}
-.badges{position:absolute;top:6px;left:6px;display:flex;gap:1px}
+.badges{flex:none;display:flex;gap:1px;margin-top:.5px}
 .badges svg{width:15px;height:15px;display:block}
 .plant{transform-box:view-box;transform-origin:50px 62px}
 .sway{animation:sway 4.5s ease-in-out infinite}
@@ -605,19 +607,13 @@ ha-card.watering .art{animation:hop .5s ease 1.4s}
 @keyframes spin{to{transform:rotate(360deg)}}
 .shimmer{animation:shim 2s ease-in-out infinite}
 @keyframes shim{0%,100%{opacity:.15;transform:translateY(2px)}50%{opacity:.9;transform:translateY(-2px)}}
-.bubbles{position:absolute;top:26px;left:4px;right:4px;display:flex;justify-content:space-between;pointer-events:none}
-.bubbles .col{display:flex;flex-direction:column;gap:4px}
-.bubble{pointer-events:auto;box-sizing:border-box;width:30px;height:30px;padding:0;border-radius:50%;cursor:pointer;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;font:700 9px/1.05 var(--ha-font-family-body,system-ui,sans-serif);
-  color:var(--primary-text-color);border:1px solid color-mix(in srgb,var(--c) 50%,transparent);
-  background:radial-gradient(circle at 32% 26%,rgba(255,255,255,.8) 0 9%,transparent 26%),
-    color-mix(in srgb,var(--c) 20%,var(--ha-card-background,var(--card-background-color,#fff)));
-  box-shadow:0 1px 3px rgba(0,0,0,.14);animation:float 4.5s ease-in-out infinite}
-.bubble svg{width:11px;height:11px;color:var(--c);flex:none}
-.bubble.warn{box-shadow:0 0 0 1.5px var(--error-color,#e5533d)}
-@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
-@container (max-width:110px){.bubble{width:24px;height:24px;font-size:7.5px}.bubble svg{width:8px;height:8px}.bubbles .col .bubble:nth-child(n+2){display:none}}
-@container (min-height:170px){.bubble{width:40px;height:40px;font-size:11px}.bubble svg{width:14px;height:14px}.bubbles{top:32px;left:8px;right:8px}}
+/* sensor chips: as many as fit on one line; the rest wrap out of sight instead of overlapping */
+.bubbles{flex:1 1 auto;min-width:0;height:18px;overflow:hidden;display:flex;flex-wrap:wrap;justify-content:center;gap:3px}
+.bubble{pointer-events:auto;border:none;margin:0;cursor:pointer;display:inline-flex;align-items:center;gap:2px;padding:1px 5px}
+.bubble svg{width:10px;height:10px;flex:none}
+ha-card.has-sensors .wrap{padding-top:26px}
+@container (min-height:170px){.chip,.bubble{font-size:13px;line-height:20px;border-radius:11px}.bubbles{height:22px}
+  .bubble svg{width:12px;height:12px}.badges svg{width:18px;height:18px}ha-card.has-sensors .wrap{padding-top:32px}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}.can{opacity:0}}
 `;
 
@@ -701,13 +697,8 @@ const SCHEMA = (t) => [
 const DEFAULTS = { species: "auto", outdoor: false, confirm: true, show_name: true, show_light: true, show_bubbles: true, max_bubbles: 4, hot_temperature: 28, cold_temperature: 12 };
 
 class CutePlantCard extends HTMLElement {
-  static getConfigForm() {
-    const t = T[uiLang()];
-    return {
-      schema: SCHEMA(t),
-      computeLabel: (s) => t.labels[s.name],
-      computeHelper: (s) => t.helpers[s.name],
-    };
+  static getConfigElement() {
+    return document.createElement(`${TAG}-editor`);
   }
 
   static getStubConfig(hass) {
@@ -721,12 +712,12 @@ class CutePlantCard extends HTMLElement {
     this.attachShadow({ mode: "open" });
     this.shadowRoot.innerHTML = `<style>${CSS}</style><ha-card tabindex="0" role="button">
       <div class="wrap"><svg class="art" viewBox="0 0 100 100" preserveAspectRatio="xMidYMax meet"></svg><div class="name"></div><div class="sub"></div></div>
-      <div class="badges"></div><div class="chip"></div><div class="bubbles"><div class="col"></div><div class="col"></div></div>
+      <div class="top"><div class="badges"></div><div class="bubbles"></div><div class="chip"></div></div>
       <svg class="can" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">${CAN}</svg>
       <div class="confirm" hidden><div class="q"></div><div class="btns"><button class="yes" type="button">✓</button><button class="no" type="button">✕</button></div></div>
     </ha-card>`;
     const $ = (s) => this.shadowRoot.querySelector(s);
-    this._el = { card: $("ha-card"), art: $(".art"), name: $(".name"), sub: $(".sub"), chip: $(".chip"), badges: $(".badges"), confirm: $(".confirm"), q: $(".q"), cols: [...this.shadowRoot.querySelectorAll(".bubbles .col")] };
+    this._el = { card: $("ha-card"), art: $(".art"), name: $(".name"), sub: $(".sub"), chip: $(".chip"), badges: $(".badges"), confirm: $(".confirm"), q: $(".q"), bubbles: $(".bubbles") };
     const bub = $(".bubbles");
     for (const ev of ["pointerdown", "pointerup", "keydown"]) bub.addEventListener(ev, (e) => e.stopPropagation());
     bub.addEventListener("click", (e) => {
@@ -906,18 +897,20 @@ class CutePlantCard extends HTMLElement {
     if (r.factor > 1) badges += badge("cold", `${t.cold} (${r.temp}°)`);
     el.badges.innerHTML = badges;
 
-    const lang = langOf(this._hass), cols = ["", ""];
-    r.sensors.forEach((b, i) => {
+    const lang = langOf(this._hass);
+    el.bubbles.innerHTML = r.sensors.map((b) => {
       const B = BUBBLE[b.type];
       const warn = !/f/i.test(b.unit) && ((B.lo != null && b.v < B.lo) || (B.hi != null && b.v > B.hi));
-      cols[i % 2] += `<button type="button" class="bubble${warn ? " warn" : ""}" style="--c:${B.color};animation-delay:-${r2(i * 1.3)}s" data-id="${esc(b.id)}" title="${esc(`${b.name}: ${b.v} ${b.unit}`)}"><svg viewBox="0 0 24 24" fill="currentColor">${B.icon}</svg><span>${esc(fmtBubble(b, lang))}</span></button>`;
-    });
-    el.cols.forEach((col, i) => (col.innerHTML = cols[i]));
+      const color = warn ? "var(--error-color,#e5533d)" : B.color;
+      return `<button type="button" class="bubble${warn ? " warn" : ""}" style="--c:${color}" data-id="${esc(b.id)}" title="${esc(`${b.name}: ${b.v} ${b.unit}`)}"><svg viewBox="0 0 24 24" fill="currentColor">${B.icon}</svg><span>${esc(fmtBubble(b, lang))}</span></button>`;
+    }).join("");
+    el.card.classList.toggle("has-sensors", r.sensors.length > 0);
 
     const lines = [name, status];
     if (r.last) lines.push(`${t.last}: ${new Date(r.last).toLocaleString(langOf(this._hass), { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}`);
     lines.push(t.every(Math.round(r.interval)) + (r.factor !== 1 ? ` (${r.factor < 1 ? t.hot : t.cold})` : ""));
     if (r.light) lines.push(`${t.light_label}: ${lightTxt}`);
+    for (const b of r.sensors) lines.push(`${b.name}: ${fmtBubble(b, lang)}`);
     if (this._pe?.error) lines.push(`${t.perenual_error} (${this._pe.error})`);
     else if (this._pe) lines.push(`Perenual: ${[this._pe.name, this._pe.sci].filter(Boolean).join(" · ")}`);
     el.card.title = lines.join("\n");
@@ -1019,7 +1012,39 @@ class CutePlantCard extends HTMLElement {
   }
 }
 
+/** Visual editor. A plain ha-form, except that it shows the defaults (name, light, confirm…)
+ *  as switched on, and leaves them out of the YAML while they keep their default value. */
+class CutePlantCardEditor extends HTMLElement {
+  setConfig(config) { this._config = config; this._render(); }
+  set hass(hass) { this._hass = hass; this._render(); }
+
+  _render() {
+    if (!this._config || !this._hass) return;
+    if (!this._form) {
+      this._form = document.createElement("ha-form");
+      this._form.addEventListener("value-changed", (e) => {
+        e.stopPropagation();
+        const config = { ...e.detail.value };
+        for (const [k, v] of Object.entries(DEFAULTS)) if (config[k] === v) delete config[k];
+        for (const [k, v] of Object.entries(config)) if (v === "" || v == null || (Array.isArray(v) && !v.length)) delete config[k];
+        this._config = config;
+        this.dispatchEvent(new CustomEvent("config-changed", { bubbles: true, composed: true, detail: { config } }));
+      });
+      this.appendChild(this._form);
+    }
+    const t = T[langOf(this._hass)];
+    Object.assign(this._form, {
+      hass: this._hass,
+      data: { ...DEFAULTS, ...this._config },
+      schema: SCHEMA(t),
+      computeLabel: (s) => t.labels[s.name],
+      computeHelper: (s) => t.helpers[s.name],
+    });
+  }
+}
+
 if (!customElements.get(TAG)) customElements.define(TAG, CutePlantCard);
+if (!customElements.get(`${TAG}-editor`)) customElements.define(`${TAG}-editor`, CutePlantCardEditor);
 
 window.customCards = window.customCards || [];
 if (!window.customCards.some((c) => c.type === TAG))
