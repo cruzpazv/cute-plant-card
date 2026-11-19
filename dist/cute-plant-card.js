@@ -4,7 +4,7 @@
  * MIT License
  */
 
-const VERSION = "0.1.0";
+const VERSION = "0.1.1";
 const TAG = "cute-plant-card";
 const DAY = 864e5;
 const PERENUAL = "https://perenual.com/api/v2";
@@ -548,6 +548,7 @@ const CAN = `<g class="can-body" transform="rotate(-24 74 18)">
 
 const CSS = `
 :host{display:block;height:100%}
+[hidden]{display:none!important}
 ha-card{display:block;height:100%;min-height:112px;position:relative;overflow:hidden;cursor:pointer;container-type:size;
   -webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;outline:none}
 ha-card:focus-visible{box-shadow:0 0 0 2px var(--primary-color)}

@@ -57,11 +57,18 @@
 
     const c = mount({ species: "monstera" }, hass(3));
     ok(c.shadowRoot.querySelector("style").sheet.cssRules.length > 40, "stylesheet parsed");
-    ok(c.shadowRoot.querySelector(".confirm").hidden, "watering question hidden at first");
+    // check what is on screen, not just the attribute
+    const shown = (el) => getComputedStyle(el).display !== "none" && el.getBoundingClientRect().height > 0;
+    const box = c.shadowRoot.querySelector(".confirm");
+    ok(!shown(box), "watering question not on screen at first");
     c._tap();
-    ok(!c.shadowRoot.querySelector(".confirm").hidden, "tap asks before watering");
+    ok(shown(box), "tap shows the watering question");
+    c.shadowRoot.querySelector(".no").click();
+    ok(!shown(box), "no closes the question");
+    c._tap();
     c.shadowRoot.querySelector(".yes").click();
     ok(c._hass.calls[0]?.[1] === "press", "yes presses the button");
+    ok(!shown(box), "yes closes the question");
     window.watered = c; // the can animation starts once the service call resolves
 
     const hot = mount({ species: "generic", sensors: ["sensor.t"] }, hass(12));
@@ -74,6 +81,8 @@
     ok(info === "sensor.t", "clicking a bubble opens its sensor");
 
     const form = customElements.get("cute-plant-card").getConfigForm();
+    const named = mount({ species: "fern", name: "Hidden", show_name: false }, hass(1));
+    ok(!shown(named.shadowRoot.querySelector(".name")), "show_name: false hides the name");
     ok(Array.isArray(form.schema) && form.computeLabel({ name: "entity" }), "editor form");
   } catch (e) {
     out.push(`FAIL exception: ${e.stack || e}`);

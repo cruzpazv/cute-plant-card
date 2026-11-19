@@ -1,6 +1,6 @@
 {
   "name": "cute-plant-card",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Cute potted plant card for Home Assistant that wilts as watering day approaches.",
   "license": "MIT",
   "private": true,
