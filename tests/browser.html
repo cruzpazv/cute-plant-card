@@ -61,8 +61,8 @@
     c._tap();
     ok(!c.shadowRoot.querySelector(".confirm").hidden, "tap asks before watering");
     c.shadowRoot.querySelector(".yes").click();
-    ok(c.shadowRoot.querySelector("ha-card").classList.contains("watering"), "yes plays the watering can");
     ok(c._hass.calls[0]?.[1] === "press", "yes presses the button");
+    window.watered = c; // the can animation starts once the service call resolves
 
     const hot = mount({ species: "generic", sensors: ["sensor.t"] }, hass(12));
     ok(hot.shadowRoot.querySelector(".art .spin"), "scorched: the sun is out");
@@ -80,6 +80,7 @@
   }
 
   setTimeout(() => {
+    if (window.watered) ok(window.watered.shadowRoot.querySelector("ha-card").classList.contains("watering"), "yes plays the watering can");
     document.title = out.length && !out.some((l) => l.startsWith("FAIL")) ? "PASS" : "FAIL";
     const pre = document.createElement("pre");
     pre.id = "result";

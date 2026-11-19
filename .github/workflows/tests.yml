@@ -39,7 +39,11 @@ jobs:
           import html, re, sys
           dom = open("dom.html").read()
           result = re.search(r'<pre id="result">(.*?)</pre>', dom, re.S)
-          print(html.unescape(result.group(1)) if result else dom[-3000:])
+          text = html.unescape(result.group(1)) if result else "FAIL no result, page tail:\n" + dom[-3000:]
+          print(text)
+          for line in text.splitlines():
+              if line.startswith("FAIL"):
+                  print(f"::error title=browser::{line}")
           sys.exit(0 if "<title>PASS</title>" in dom else 1)
           PY
 
