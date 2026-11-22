@@ -4,7 +4,7 @@
  * MIT License
  */
 
-const VERSION = "0.2.2";
+const VERSION = "0.2.3";
 const TAG = "cute-plant-card";
 const DAY = 864e5;
 const PERENUAL = "https://perenual.com/api/v2";
@@ -396,7 +396,7 @@ const star = (x, y, s, delay) =>
 /** The whole scene for one state. p = {kind, d, mood, col, wet, rain} */
 function plantSVG(p) {
   const { kind, d, col, mood } = p;
-  const lost = d > 0.85 ? 3 : d > 0.6 ? 2 : d > 0.4 ? 1 : 0;
+  const lost = d > 0.9 ? 3 : d > 0.75 ? 2 : d > 0.6 ? 1 : 0; // none by halfway
   let back, front = "";
   if (kind === "cactus") back = cactus(d, col);
   else if (kind === "succulent") back = rosette(d, col, lost);
@@ -418,7 +418,7 @@ function plantSVG(p) {
     (front ? `<g class="plant ${sway}">${front}</g>` : "");
   if ((mood === "happy" || mood === "rain") && d < 0.15) out += star(18, 30, 3, 0) + star(82, 22, 2.6, 0.6) + star(85, 47, 2, 1.1) + star(14, 52, 2, 1.5);
   if (p.wet) out += [[30, 36], [70, 30], [57, 18], [40, 24]].map(([x, y]) => `<path d="M${x},${y} q-1.5,2.6 0,3.4 q1.5,-.8 0,-3.4z" fill="#a9ddff" stroke="#5fb0e6" stroke-width=".4"/>`).join("");
-  if (d > 0.35 && d < 0.9 && kind !== "cactus" && mood !== "sleep") {
+  if (d > 0.6 && d < 0.9 && kind !== "cactus" && mood !== "sleep") { // a leaf falling, from the first one lost on
     const bit = kind === "flower"
       ? `<ellipse rx="2.6" ry="1.4" fill="${col.flower}"/>`
       : `<path d="${leafPath("oval", 7, 2.4, 0)}" fill="${col.dry}" stroke="${darker(col.dry, 0.25)}" stroke-width=".5"/>`;

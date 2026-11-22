@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.3
+
+- Halfway to watering the plant still has all its leaves: they start falling once it is 60 % dry (was 40 %), and the falling-leaf animation starts with the first one.
+
 ## 0.2.2
 
 - The logo now shows at the top of the README inside HACS (plain image instead of `<picture>`, which HACS doesn't render).

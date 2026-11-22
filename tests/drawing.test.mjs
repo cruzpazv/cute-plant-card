@@ -34,10 +34,20 @@ test("a wilted plant has lost leaves, and they lie on the ground", () => {
   }
 });
 
+test("halfway, nothing has fallen yet", () => {
+  for (const kind of KINDS) {
+    const svg = draw(kind, 0.5, "ok");
+    assert.ok(!svg.includes("#c39a5e"), `${kind}: nothing on the ground`);
+    assert.doesNotMatch(svg, /class="falling"/, `${kind}: nothing falling`);
+  }
+  assert.match(draw("generic", 0.7, "tired"), /class="falling"/, "it starts once the first leaf is lost");
+});
+
 test("the flower loses petals as it wilts", () => {
   const petals = (d) => (draw("flower", d, "ok").match(/ry="4.8"/g) || []).length;
   assert.equal(petals(0), 6);
-  assert.ok(petals(1) < petals(0.5) && petals(0.5) < petals(0));
+  assert.equal(petals(0.5), 6, "none lost by halfway");
+  assert.ok(petals(1) < petals(0.8) && petals(0.8) < petals(0));
 });
 
 test("each mood has its own face and extras", () => {
@@ -45,7 +55,7 @@ test("each mood has its own face and extras", () => {
   assert.doesNotMatch(draw("generic", 0.5, "happy"), /class="twinkle"/, "no sparkles later on");
   assert.match(draw("generic", 1, "sad"), /class="tear"/);
   assert.match(draw("generic", 0.8, "tired"), /class="sweat"/);
-  assert.match(draw("generic", 0.6, "ok"), /class="falling"/, "a leaf falls while it dries out");
+  assert.match(draw("generic", 0.7, "tired"), /class="falling"/, "a leaf falls while it dries out");
   assert.match(draw("generic", 0, "rain", { rain: true }), /class="drop"/);
   assert.match(draw("generic", 0.2, "sleep"), /class="zz"/);
   const heat = draw("generic", 1, "heat");
